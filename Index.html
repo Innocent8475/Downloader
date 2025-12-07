@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Social Media Downloader</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200..800&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #13c8ec;
+            --bg-light: #f6f8f8;
+            --bg-dark: #101f22;
+            --text-light: #111718;
+            --text-dark: #f6f8f8;
+            --card-light: #ffffff;
+            --card-dark: #182c30;
+            --border-light: #dbe4e6;
+            --border-dark: #2a4a51;
+            --max-w: 72rem;
+            --rad: 1rem;
+            --rad-full: 9999px;
+            --bg: var(--bg-light);
+            --txt: var(--text-light);
+            --card: var(--card-light);
+            --border: var(--border-light);
+            --mute: rgba(17, 23, 24, 0.7);
+            --place: rgba(17, 23, 24, 0.5);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: var(--bg-dark);
+                --txt: var(--text-dark);
+                --card: var(--card-dark);
+                --border: var(--border-dark);
+                --mute: rgba(246, 248, 248, 0.7);
+                --place: rgba(246, 248, 248, 0.5);
+            }
+
+            .clr-dark {
+                background: rgba(229, 231, 235, .2);
+                color: #e5e7eb;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            font-family: "Plus Jakarta Sans", sans-serif;
+            font-weight: 600;
+            padding: 0;
+            border: 0 solid var(--border);
+        }
+
+        body {
+            font-family: "Plus Jakarta Sans", sans-serif;
+            background-color: var(--bg);
+            color: var(--txt);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        a { text-decoration: none; color: inherit; }
+        button, input { font-family: inherit; }
+
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .text-p { color: var(--primary); }
+
+        .anim-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity .6s ease-out, transform .6s ease-out;
+            will-change: opacity, transform;
+        }
+
+        .anim-scroll.in-view {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .anim-scroll:nth-child(1) { transition-delay: .1s; }
+        .anim-scroll:nth-child(2) { transition-delay: .2s; }
+        .anim-scroll:nth-child(3) { transition-delay: .3s; }
+        .anim-scroll:nth-child(4) { transition-delay: .4s; }
+        .anim-scroll:nth-child(5) { transition-delay: .5s; }
+        .anim-scroll:nth-child(6) { transition-delay: .6s; }
+
+        .layout {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .header-sticky {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            background: rgba(246, 248, 248, .85);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .header-sticky { background: rgba(16, 31, 34, .85); }
+        }
+
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: var(--max-w);
+            padding: .75rem 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .header-inner { padding: .75rem 2.5rem; }
+        }
+
+        .brand-group { display: flex; align-items: center; gap: .75rem; }
+        .brand-icon { color: var(--primary); font-size: 1.5rem; font-weight: 400; }
+        .brand-name { font-size: 1.125rem; font-weight: 700; }
+
+        .nav-desk { display: none; align-items: center; gap: 2rem; }
+        @media (min-width: 768px) { .nav-desk { display: flex; } }
+
+        .nav-list { display: flex; gap: 2rem; }
+        .nav-item { font-size: .875rem; font-weight: 500; transition: color .2s; }
+        .nav-item:hover { color: var(--primary); }
+
+        .btn-cta {
+            background: var(--primary);
+            color: var(--bg-dark);
+            font-weight: 700;
+            padding: .6rem 1.25rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: opacity .2s;
+            font-size: .875rem;
+        }
+
+        .btn-cta:hover { opacity: .9; }
+
+        .menu-toggle {
+            display: flex;
+            font-size: 1.5rem;
+            font-weight: 00;
+            background: none;
+            color: var(--txt);
+            cursor: pointer;
+        }
+        .menu-toggle i {
+            font-weight: 400;
+        }
+        @media (min-width: 768px) { .menu-toggle { display: none; } }
+
+        .mobile-nav-drawer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%;
+            background: var(--bg);
+            z-index: 90;
+            padding-top: 80px;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+            transform: translateY(-100%);
+            transition: transform .4s cubic-bezier(.16, 1, .3, 1);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, .1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .mobile-nav-drawer.is-open { transform: translateY(0); }
+        .mob-link { font-size: 1rem; font-weight: 600; }
+
+        .main-wrap {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .content-box {
+            width: 100%;
+            max-width: var(--max-w);
+            flex: 1;
+            padding: 2.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (min-width: 768px) { .content-box { padding: 5rem 1rem; } }
+
+        .hero-grid {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 2rem;
+            padding: 2.5rem 1rem;
+        }
+
+        @media (min-width: 864px) {
+            .hero-grid { flex-direction: row; align-items: center; }
+            .hero-txt, .hero-visual { width: 50%; }
+        }
+
+        .hero-txt { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; }
+        .hero-head { font-size: 2.25rem; font-weight: 900; line-height: 1.2; }
+        .hero-sub { font-size: 1rem; color: var(--mute); }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 32rem;
+            height: 4rem;
+        }
+
+        .input-field-wrap {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            align-items: stretch;
+            border-radius: var(--rad-full);
+            background: var(--card);
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+            overflow: hidden;
+        }
+
+        .input-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 1.25rem 0 .5rem;
+            color: var(--place);
+            font-size: 1.25rem;
+        }
+
+        .url-input {
+            flex: 1;
+            width: 100%;
+            background: transparent;
+            outline: 0;
+            color: var(--txt);
+            font-size: 1rem;
+        }
+
+        .url-input::placeholder { color: var(--place); }
+
+        .btn-dl-wrap { display: flex; align-items: center; justify-content: center; padding: .5rem; }
+        .btn-dl { height: 3rem; border-radius: var(--rad-full); padding: 0 1.25rem; min-width: 84px; }
+
+        .hero-img {
+            width: 100%;
+            aspect-ratio: 1/1;
+            border-radius: .75rem;
+            background: url("/img/hero.png") center/cover no-repeat;
+        }
+
+        .sect-gap { margin-top: 4rem; }
+        @media (min-width: 768px) { .sect-gap { margin-top: 6rem; } }
+
+        .sect-content { display: flex; flex-direction: column; gap: 2.5rem; padding: 2.5rem 1rem; }
+
+        .txt-block { display: flex; flex-direction: column; gap: 1rem; max-width: 48rem; }
+        .sect-head { font-size: 2.25rem; font-weight: 900; }
+        .sect-desc { font-size: 1rem; color: var(--mute); }
+
+        .grid-auto {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+
+        .platform-card {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            gap: 1rem;
+            border-radius: var(--rad);
+            border: 1px solid var(--border);
+            background: var(--card);
+            padding: 1.5rem;
+        }
+
+        .plat-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: var(--rad);
+            font-size: 1.25rem;
+        }
+
+        .card-head { font-size: 1.125rem; font-weight: 700; }
+        .card-body { font-size: .875rem; color: var(--mute); line-height: 1.5; }
+
+        .clr-red    { background: rgba(239, 68, 68, .1);   color: #ef4444; }
+        .clr-pink   { background: rgba(236, 72, 153, .1);  color: #ec4899; }
+        .clr-sky    { background: rgba(14, 165, 233, .1);  color: #0ea5e9; }
+        .clr-blue   { background: rgba(37, 99, 235, .1);   color: #2563eb; }
+        .clr-dark   { background: rgba(31, 41, 55, .1);    color: #1f2937; }
+        .clr-cyan   { background: rgba(6, 182, 212, .1);   color: #06b6d4; }
+
+        .center-sect { align-items: center; text-align: center; }
+
+        .step-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            width: 100%;
+            max-width: 64rem;
+            padding-top: 2rem;
+        }
+
+        @media (min-width: 768px) {
+            .step-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        .step-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .step-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 4rem;
+            height: 4rem;
+            border-radius: var(--rad-full);
+            background: rgba(19, 200, 236, .2);
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 1.75rem;
+        }
+
+        .avatar {
+            width: 3rem;
+            height: 3rem;
+            border-radius: var(--rad-full);
+            background-size: cover;
+        }
+
+        .faq-list {
+            width: 100%;
+            max-width: 48rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding-top: 2rem;
+        }
+
+        details.faq-item {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            list-style: none;
+        }
+
+        .faq-q { font-size: 1.125rem; font-weight: 500; }
+        .faq-tog { transition: transform .3s; }
+        .faq-item[open] .faq-tog { transform: rotate(180deg); }
+        .faq-a { margin-top: .5rem; color: var(--mute); line-height: 1.6; }
+
+        footer {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            border-top: 1px solid var(--border);
+            margin-top: 4rem;
+            padding: 3rem 1rem;
+        }
+
+        .foot-box {
+            width: 100%;
+            max-width: var(--max-w);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 2rem;
+        }
+
+        .foot-link-grp {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            font-size: .875rem;
+        }
+
+        @media (min-width: 640px) {
+            .foot-link-grp, .foot-btm { flex-direction: row; gap: 2rem; }
+        }
+
+        .foot-link {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            transition: color .15s;
+        }
+
+        .foot-link:hover { color: var(--primary); }
+
+        .divide {
+            width: 100%;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .foot-btm {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="layout">
+
+    <!-- Mobile Drawer -->
+    <nav id="mobile-drawer" class="mobile-nav-drawer">
+        <a href="#features" class="mob-link">Features</a>
+        <a href="Blog" class="mob-link">Blog</a>
+        <a href="#how-it-works" class="mob-link">How It Works</a>
+        <a href="#features" class="mob-link">Privacy Policy</a>
+
+        <button class="btn-cta">Contact Us</button>
+    </nav>
+
+    <!-- Header -->
+    <header id="app-header" class="header-sticky">
+        <div class="header-inner">
+            <div class="brand-group">
+                <i class="ri-download-line brand-icon"></i>
+                <h2 class="brand-name">Downloader</h2>
+            </div>
+            <div class="nav-desk">
+                <nav class="nav-list">
+                    <a class="nav-item" href="#features">Features</a>
+                    <a class="nav-item" href="Blog.html">Blog</a>
+                    <a class="nav-item" href="#how-it-works">How It Works</a>
+                                        <a class="nav-item" href="#features">Privacy Policy</a>
+                                        <a href="#features" class="mob-link">Copyright Policy</a>
+                </nav>
+                <button class="btn-cta">Contact Us</button>
+            </div>
+            <button id="menu-btn" class="menu-toggle">
+                <i id="menu-icon" class="ri-menu-3-line"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="main-wrap">
+        <div class="content-box">
+
+            <!-- Hero -->
+            <section id="hero" class="hero-grid anim-scroll">
+                <div class="hero-txt">
+                    <div class="txt-block">
+                        <h1 class="hero-head">Download Videos from Your Favorite Social Media Platforms.</h1>
+                        <p class="hero-sub">Simply paste the link below and get your video in seconds. No registration required.</p>
+                    </div>
+                    <label class="input-group">
+                        <div class="input-field-wrap">
+                            <div class="input-icon"><i class="ri-link"></i></div>
+                            <input id="url-input" class="url-input" placeholder="Paste a social media link here..." value="" />
+                            <div class="btn-dl-wrap">
+                                <button id="dl-btn" class="btn-cta btn-dl">Download</button>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                <div class="hero-visual">
+                    <div class="hero-img"></div>
+                </div>
+            </section>
+
+            <!-- Platforms -->
+            <section id="platforms" class="sect-gap anim-scroll">
+                <div class="sect-content">
+                    <div class="txt-block">
+                        <h1 class="sect-head">Supports All Major Platforms</h1>
+                        <p class="sect-desc">We support video & audio downloads from the world’s most popular social networks with the highest quality available.</p>
+                    </div>
+                    <div class="grid-auto">
+                        <div class="platform-card anim-scroll">
+                            <div class="plat-icon clr-red"><i class="ri-youtube-fill"></i></div>
+                            <div>
+                                <h2 class="card-head">YouTube</h2>
+                                <p class="card-body">Download full playlists, channels, Shorts, or single videos in resolutions up to 8K. Extract audio as MP3 or M4A with full metadata and thumbnails.</p>
+                            </div>
+                        </div>
+                        <div class="platform-card anim-scroll">
+                            <div class="plat-icon clr-pink"><i class="ri-instagram-fill"></i></div>
+                            <div>
+                                <h2 class="card-head">Instagram</h2>
+                                <p class="card-body">Save Reels, IGTV, Stories (including highlights), photo carousels, and profile pictures in original quality — even from private accounts you follow.</p>
+                            </div>
+                        </div>
+                        <div class="platform-card anim-scroll">
+                            <div class="plat-icon clr-sky"><i class="ri-tiktok-fill"></i></div>
+                            <div>
+                                <h2 class="card-head">TikTok</h2>
+                                <p class="card-body">Download any TikTok video without watermark, including drafts, live recordings, and slideshows. Full HD quality with original sound preserved.</p>
+                            </div>
+                        </div>
+                        <div class="platform-card anim-scroll">
+                            <div class="plat-icon clr-blue"><i class="ri-facebook-circle-fill"></i></div>
+                            <div>
+                                <h2 class="card-head">Facebook</h2>
+                                <p class="card-body">Grab public and private videos, Reels, Watch parties, and Live streams (after they end). Supports 4K when available.</p>
+                            </div>
+                        </div>
+                        <div class="platform-card anim-scroll">
+                            <div class="plat-icon clr-dark"><i class="ri-twitter-x-fill"></i></div>
+                            <div>
+                                <h2 class="card-head">X / Twitter</h2>
+                                <p class="card-body">Download videos, GIFs, and Spaces audio from tweets. Works with protected accounts you follow and preserves original timestamps.</p>
+                            </div>
+                        </div>
+                        <div class="platform-card anim-scroll">
+                            <div class="plat-icon clr-cyan"><i class="ri-vimeo-fill"></i></div>
+                            <div>
+                                <h2 class="card-head">Vimeo</h2>
+                                <p class="card-body">Download private and password-protected Vimeo videos (when you have access), staff picks, and 4K/8K HDR content with embedded subtitles.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features -->
+            <section id="features" class="sect-gap anim-scroll">
+                <div class="sect-content">
+                    <div class="txt-block">
+                        <h1 class="sect-head">Why Millions Choose Us</h1>
+                        <p class="sect-desc">Lightning-fast downloads, zero ads, and complete privacy — everything you expect from a premium downloader, for free.</p>
+                    </div>
+                    <div class="grid-auto">
+                        <div class="platform-card anim-scroll">
+                            <i class="ri-hd-fill text-p" style="font-size:2rem"></i>
+                            <div>
+                                <h2 class="card-head">True 4K & 8K Support</h2>
+                                <p class="card-body">We fetch the absolute highest resolution available on every platform — including HDR and 60fps when offered.</p>
+                            </div>
+                        </div>
+                        <div class="platform-card anim-scroll">
+                            <i class="ri-file-video-fill text-p" style="font-size:2rem"></i>
+                            <div>
+                                <h2 class="card-head">Any Format You Need</h2>
+                                <p class="card-body">MP4, WEBM, MKV for video • MP3, M4A, WAV for audio • Even direct thumbnail and subtitle downloads.</p>
+                            </div>
+                        </div>
+                        <div class="platform-card anim-scroll">
+                            <i class="ri-gift-fill text-p" style="font-size:2rem"></i>
+                            <div>
+                                <h2 class="card-head">100% Free Forever</h2>
+                                <p class="card-body">No accounts, no paywalls, no speed caps, no daily limits. Completely free for personal and commercial use.</p>
+                            </div>
+                        </div>
+                        <div class="platform-card anim-scroll">
+                            <i class="ri-shield-check-fill text-p" style="font-size:2rem"></i>
+                            <div>
+                                <h2 class="card-head">Privacy First</h2>
+                                <p class="card-body">No logs, no tracking, no cookies. Your links are processed securely and deleted immediately after download.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- How It Works -->
+            <section id="how-it-works" class="sect-gap anim-scroll">
+                <div class="sect-content center-sect">
+                    <div class="txt-block center-sect">
+                        <h1 class="sect-head">Download in Three Simple Steps</h1>
+                        <p class="sect-desc">No software installation, no extensions — works instantly on any device.</p>
+                    </div>
+                    <div class="step-grid">
+                        <div class="step-card anim-scroll">
+                            <div class="step-icon"><i class="ri-file-copy-fill"></i></div>
+                            <h3 class="card-head">1. Copy the Video Link</h3>
+                            <p class="card-body">Open your favorite social app or website, find the video you love, and copy its share link (long-press → Copy Link).</p>
+                        </div>
+                        <div class="step-card anim-scroll">
+                            <div class="step-icon"><i class="ri-clipboard-fill"></i></div>
+                            <h3 class="card-head">2. Paste Here</h3>
+                            <p class="card-body">Come back to this page and paste the link into the input field above. We instantly detect the platform and available qualities.</p>
+                        </div>
+                        <div class="step-card anim-scroll">
+                            <div class="step-icon"><i class="ri-download-cloud-2-fill"></i></div>
+                            <h3 class="card-head">3. Download Instantly</h3>
+                            <p class="card-body">Choose your preferred resolution and format, then download directly to your phone, tablet, or computer — no waiting!</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Testimonials -->
+            <section id="testimonials" class="sect-gap anim-scroll">
+                <div class="sect-content center-sect">
+                    <div class="txt-block center-sect">
+                        <h1 class="sect-head">Loved by Millions Worldwide</h1>
+                        <p class="sect-desc">Real users, real stories — here’s what people say about us.</p>
+                    </div>
+                    <div class="grid-auto" style="width:100%">
+                        <div class="platform-card anim-scroll">
+                            <div class="flex items-center" style="gap:1rem">
+                                <div class="avatar" style="background-image:url('https://lh3.googleusercontent.com/aida-public/AB6AXuCI51_Gn6yUNCTs_-k5gvrJnB1adD5ZdV1kLqc6hJPUddOm09Rm8CWGx78FiJAkktMCllbL4CgFZD04K8tPTHRhKAnceaXXKWut-NdSgsB2cyU2g1X-pkpkY1hB-WdLxvm7tpFzqiqpqk7LJVqyFvuqH3y_3zxc4yjjKpBnGfU3S2LQzXjra0JlaJ4fpxQ9jQINC5mqM3SLqXZB5SsSqCnjvTw-d0VUFLkij4NGpMYLfJQ9AoeiA_IHU31YSV4GrHK0gKhZhCMDQlM')"></div>
+                                <div>
+                                    <p style="font-weight:700">Maria Gonzalez</p>
+                                    <p class="card-body">Content Creator & Traveler</p>
+                                </div>
+                            </div>
+                            <p class="card-body mt-3">"I save travel Reels and TikToks every day for inspiration. This is the only tool that never adds watermarks and works 100% of the time. Absolute lifesaver!"</p>
+                        </div>
+                        <div class="platform-card anim-scroll">
+                            <div class="flex items-center" style="gap:1rem">
+                                <div class="avatar" style="background-image:url('https://lh3.googleusercontent.com/aida-public/AB6AXuCI51_Gn6yUNCTs_-k5gvrJnB1adD5ZdV1kLqc6hJPUddOm09Rm8CWGx78FiJAkktMCllbL4CgFZD04K8tPTHRhKAnceaXXKWut-NdSgsB2cyU2g1X-pkpkY1hB-WdLxvm7tpFzqiqpqk7LJVqyFvuqH3y_3zxc4yjjKpBnGfU3S2LQzXjra0JlaJ4fpxQ9jQINC5mqM3SLqXZB5SsSqCnjvTw-d0VUFLkij4NGpMYLfJQ9AoeiA_IHU31YSV4GrHK0gKhZhCMDQlM')"></div>
+                                <div>
+                                    <p style="font-weight:700">James Carter</p>
+                                    <p class="card-body">Video Editor</p>
+                                </div>
+                            </div>
+                            <p class="card-body mt-3">"Finally a downloader that supports 8K YouTube and private Vimeo links. My clients send me protected links all the time — this handles everything perfectly."</p>
+                        </div>
+                        <div class="platform-card anim-scroll">
+                            <div class="flex items-center" style="gap:1rem">
+                                <div class="avatar" style="background-image:url('https://lh3.googleusercontent.com/aida-public/AB6AXuCI51_Gn6yUNCTs_-k5gvrJnB1adD5ZdV1kLqc6hJPUddOm09Rm8CWGx78FiJAkktMCllbL4CgFZD04K8tPTHRhKAnceaXXKWut-NdSgsB2cyU2g1X-pkpkY1hB-WdLxvm7tpFzqiqpqk7LJVqyFvuqH3y_3zxc4yjjKpBnGfU3S2LQzXjra0JlaJ4fpxQ9jQINC5mqM3SLqXZB5SsSqCnjvTw-d0VUFLkij4NGpMYLfJQ9AoeiA_IHU31YSV4GrHK0gKhZhCMDQlM')"></div>
+                                <div>
+                                    <p style="font-weight:700">Aisha Rahman</p>
+                                    <p class="card-body">University Student</p>
+                                </div>
+                            </div>
+                            <p class="card-body mt-3">"I download lectures from private Facebook groups and TikTok tutorials for offline study. No ads, no sign-up, works on my phone — exactly what I needed!"</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FAQ -->
+            <section id="faq" class="sect-gap anim-scroll">
+                <div class="sect-content center-sect">
+                    <div class="txt-block center-sect">
+                        <h1 class="sect-head">Frequently Asked Questions</h1>
+                        <p class="sect-desc">Everything you need to know before downloading.</p>
+                    </div>
+                    <div class="faq-list">
+                        <details class="faq-item">
+                            <summary><span class="faq-q">Is this really 100% free?</span><i class="ri-arrow-down-s-line faq-tog"></i></summary>
+                            <p class="faq-a">Yes! No premium tiers, no hidden fees, no speed throttling. We keep the lights on through optional donations and partnerships — but everything is free for everyone, forever.</p>
+                        </details>
+                        <details class="faq-item">
+                            <summary><span class="faq-q">What’s the max video quality?</span><i class="ri-arrow-down-s-line faq-tog"></i></summary>
+                            <p class="faq-a">We always fetch the highest resolution the platform offers — that’s up to 8K on YouTube, 4K on Instagram/TikTok/Facebook, and full HDR when available.</p>
+                        </details>
+                        <details class="faq-item">
+                            <summary><span class="faq-q">Is it safe and legal to use?</span><i class="ri-arrow-down-s-line faq-tog"></i></summary>
+                            <p class="faq-a">The tool itself is 100% safe — no malware, no tracking. Legally, you may only download content you own or have explicit permission to save (e.g., your own videos, public domain, or Creative Commons). Respect copyright laws in your country.</p>
+                        </details>
+                        <details class="faq-item">
+                            <summary><span class="faq-q">Do you store my links or videos?</span><i class="ri-arrow-down-s-line faq-tog"></i></summary>
+                            <p class="faq-a">Never. Your link is processed in real-time and deleted from our servers the moment the download starts. We don’t keep logs or history.</p>
+                        </details>
+                        <details class="faq-item">
+                            <summary><span class="faq-q">Will this work on my phone?</span><i class="ri-arrow-down-s-line faq-tog"></i></summary>
+                            <p class="faq-a">Absolutely! Works perfectly on iPhone, Android, iPad, and any desktop browser. No app installation required.</p>
+                        </details>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <footer>
+        <div class="foot-box">
+            <div class="brand-group">
+                <i class="ri-flashlight-fill brand-icon"></i>
+                <h2 class="brand-name">Downloader</h2>
+            </div>
+            <div class="foot-link-grp">
+                <a class="foot-link" href="mailto:support@downloader.com"><i class="ri-mail-send-fill"></i>support@dldr.com</a>
+                <a class="foot-link" href="tel:+1234567890"><i class="ri-phone-fill"></i>+1 (234) 567-890</a>
+            </div>
+            <div class="divide"></div>
+            <div class="foot-btm">
+                <p style="color:var(--mute);font-size:.875rem">© 2025 Downloader. All rights reserved.</p>
+                <div style="display:flex;gap:1.5rem">
+                    <a href="#" class="foot-link" style="font-size:.875rem">Terms of Service</a>
+                    <a href="#" class="foot-link" style="font-size:.875rem">Privacy Policy</a>
+                    
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<script>
+    const menuBtn = document.getElementById("menu-btn");
+    const drawer = document.getElementById("mobile-drawer");
+    const menuIcon = document.getElementById("menu-icon");
+    const links = document.querySelectorAll(".mob-link");
+
+    function toggleMenu() {
+        drawer.classList.toggle("is-open");
+        const isOpen = drawer.classList.contains("is-open");
+        menuIcon.className = isOpen ? "ri-close-line" : "ri-menu-3-line";
+    }
+
+    menuBtn.addEventListener("click", toggleMenu);
+    links.forEach(link => link.addEventListener("click", toggleMenu));
+
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add("in-view");
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: .1 });
+
+    document.querySelectorAll(".anim-scroll").forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
